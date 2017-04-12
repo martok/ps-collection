@@ -1,4 +1,4 @@
-function Git-Export {
+function Export-GitArchive {
     [CmdletBinding()]
     param (
         [parameter(Mandatory=$true,ParameterSetName='targetPath')]
