@@ -27,3 +27,40 @@ param (
         Write-Progress -Activity $Activity -PercentComplete $PercentComplete -Status ("Working - " + $PercentComplete + "%")
     }
 }
+
+function Split-Pathspec
+{
+[CmdletBinding()]
+param (
+    [Parameter(Mandatory=$true, Position=0, ValueFromPipeline=$true)]
+    [string]$PathSpec
+)
+
+    return $PathSpec | Select-String -Pattern '("[^"]+"|[^"][^;]+)(?:;|$)' -AllMatches | % {$_.matches} | % { $_.groups.Captures[1].Value }
+}
+
+function Test-PathInList ([string[]]$paths, [string]$path)
+{
+    $path = $path -replace "\\$", ""
+
+    return ( ($paths -contains $path) -or ($paths -contains $path+'\') )
+}
+
+function Prepend-Path ([string[]]$paths, [string]$path)
+{
+    $path = $path -replace "\\$", ""
+
+    if ( Test-PathInList $paths $path ) {
+        return $paths
+    } else {
+        return @( $path ) + $paths
+    }
+}
+
+function Prepend-Envvar ([string]$var, [string]$varscope, [string]$path)
+{
+    $paths = [Environment]::GetEnvironmentVariable($var,$varscope) | Split-Pathspec
+    $paths = Prepend-Path $paths $myPath
+    $path = $paths -join ';'
+    [Environment]::SetEnvironmentVariable($var, $path, $varscope)
+}
